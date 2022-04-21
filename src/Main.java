@@ -22,14 +22,18 @@ public class Main {
 
         //INICIO DEL ALGORITMO
         int t=0;
-        int[][] w = new int[n][r];
+        int[] w = new int[n];   //INICIALIZAMOS LAS CADENAS
         for(int i=0; i<n; i++){
+            int[] wj = new int[r]; String wjS="";
             for(int j=0; j<r; j++){
-                w[i][j] = (int) Math.floor(Math.random()*s);
+                wj[j] = (int) Math.floor(Math.random()*s);
+                wjS+=wj[j];
             }
+            w[i] = Integer.parseInt(wjS);
         }
+
         int[] apt = new int[n];
-        for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i,r);}
+        for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
 
         int[] apt_gen = new int[t_max+1];
         apt_gen[0]=0;
@@ -60,28 +64,24 @@ public class Main {
             int num_real_casillas = beta[n-1] + 1;
 
             //SELECCION DE INDIVIDUOS
-            int[][] w_new = new int[n][r];
+            int[] w_new = new int[n];
             for(int j=0; j<n; j++){
                 int cas = (int) Math.floor(Math.random()*num_real_casillas);
                 int i=-1;
                 for(int x=0; x<n; x++){
                     if(cas>=alfa[x] && cas<=beta[x]){i=x;}
                 }
-                for(int x=0; x<r; x++){
-                    w_new[j][x] = w[i][x];
-                }
+                w_new[j] = w[i];
             }
             for(int i=0; i<n; i++){
-                for(int x=0; x<r; x++){
-                    w[i][x] = w_new[i][x];
-                }
+                w[i] = w_new[i];
             }
             //FIN SELECCION
             //CROSSOVER
             //MUTACION
             t++;
 
-            for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i,r);}
+            for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
             apt_gen[t]=0;
             for(int i=0; i<n; i++){apt_gen[t]+=apt[i];}
             apt_m_gen[t] = apt_gen[t]/n;
@@ -90,21 +90,18 @@ public class Main {
         //SOLUCION (MEJOR INDIVIDUO)
         int mejorPos = max(apt);
         int mejor_a = apt[mejorPos];
-        String mejor_w = "";
-        for(int i=0; i<r; i++){
-            mejor_w+=w[mejorPos][i];
-        }
+        int mejor_w = w[mejorPos];
         System.out.println("Mejor aptitud: "+mejor_a + " - Mejor cadena: " + mejor_w);
 
 
 
     }
 
-    private static int funcionAptitud(int[][] w, int x, int r){
+    private static int funcionAptitud(int[] w, int x){
         //FUNCION DE APTITUD: LONGUITUD DE 2'S EN LA CADENA
-        int out=0;
-        for(int i=0; i<r; i++){
-            if(w[x][i]==2) out++;
+        int out=0; String wS = String.valueOf(w[x]);
+        for(int i=0; i<wS.length(); i++){
+            if(wS.charAt(i)=='2') out++;
         }
         return out;
     }
