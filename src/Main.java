@@ -9,6 +9,7 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args){
+        recombinar(000000, 111111, 4, 6);
         //MODELADO DEL PROBLEMA
         int s = 3; //Nº DE SIMBOLOS DEL ALFABETO
         int r = 5; //LONG DE LA CADENA
@@ -77,7 +78,31 @@ public class Main {
                 w[i] = w_new[i];
             }
             //FIN SELECCION
+
             //CROSSOVER
+            for(int i=0; i<n; i++){
+               System.out.print(w[i]+" ");
+            }
+            System.out.println();
+
+            int[][] parejas = getCrossoverParejas(n,pc);
+                //intercambiamos elmaterial genetico de las parejas
+            for(int i=0; i<(parejas[0].length); i++){
+                System.out.println(parejas[0][i] + " " + parejas[1][i]);
+                int posA = parejas[0][i]; int posB = parejas[1][i];
+                int genes = (int) Math.floor(Math.random()*(r-1)) + 1; //nº aleatorio entre 1 y r-1
+                System.out.println(genes);
+                int[] nuevosValores = recombinar(w[posA],w[posB],genes,r);
+                w[posA] = nuevosValores[0];
+                w[posB] = nuevosValores[1];
+            }
+
+            for(int i=0; i<n; i++){
+                System.out.print(w[i]+" ");
+            }
+            System.out.println();
+            //FIN CROSSOVER
+
             //MUTACION
             t++;
 
@@ -95,6 +120,57 @@ public class Main {
 
 
 
+    }
+
+    private static int[] recombinar(int a, int b, int genes, int r){
+        String as = String.valueOf(a);
+        while(as.length()!=r) as = '0'+as;
+        String bs = String.valueOf(b);
+        while(bs.length()!=r) bs = '0'+bs;
+
+        String sub_a = as.substring(genes);
+        String sub_b = bs.substring(genes);
+
+        String finalas = as.substring(0,genes)+sub_b;
+        String finalbs = bs.substring(0,genes)+sub_a;
+        return new int[]{Integer.valueOf(finalas),Integer.valueOf(finalbs)};
+    }
+
+    private static int[][] getCrossoverParejas(int n, double pc){
+        ArrayList<Integer> recombinacionesPos = new ArrayList<>();
+        for(int i=0; i<n; i++){
+            double randomnum = Math.random();
+            if(randomnum<=pc){recombinacionesPos.add(i);}
+        }
+
+        //Si los individuos a recombinar no son pares añadimos uno aleatorio del otro conjunto
+        if(recombinacionesPos.size()%2!=0){
+            int randompos = (int) Math.floor(Math.random()*recombinacionesPos.size());
+            recombinacionesPos.remove(randompos);
+        }
+        int recombinaciones = recombinacionesPos.size();
+
+        //Emparejamos aleatoriamente
+        int[][] parejas = new int[2][recombinaciones/2];
+        for(int i=0; i<(recombinaciones/2); i++){
+            int random1 = (int) Math.floor(Math.random()*recombinacionesPos.size());
+            int random2 = (int) Math.floor(Math.random()*recombinacionesPos.size());
+
+            while(random1==random2){
+                random1 = (int) Math.floor(Math.random()*recombinacionesPos.size());
+                random2 = (int) Math.floor(Math.random()*recombinacionesPos.size());
+            }
+            parejas[0][i] = recombinacionesPos.get(random1);
+            parejas[1][i] = recombinacionesPos.get(random2);
+
+            if(random2>random1){
+                recombinacionesPos.remove(random2); recombinacionesPos.remove(random1);
+            }else{
+                recombinacionesPos.remove(random1); recombinacionesPos.remove(random2);
+            }
+        }
+
+        return parejas;
     }
 
     private static int funcionAptitud(int[] w, int x){
