@@ -9,7 +9,6 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args){
-        recombinar(000000, 111111, 4, 6);
         //MODELADO DEL PROBLEMA
         int s = 3; //Nº DE SIMBOLOS DEL ALFABETO
         int r = 5; //LONG DE LA CADENA
@@ -17,9 +16,10 @@ public class Main {
         //PARAMETROS DEL ALGORITMO
         int n = 4; //TAMAÑO DE LA POBLACION
         double pc = 0.8; //PROBABILIDAD DE CRUCE
-        double pm = 1 / (r*n); //PROBABILIDAD DE MUTACION
+        double pm = 1.0 / (r*n); //PROBABILIDAD DE MUTACION
         int t_max = 1;
         int num = 1000; //Nº ORIGINAL DE CASILLAS DE LA RULETA
+        double pextraccion = 0.05; //PORCENTAJE DE LAS MUESTRAS QUE EXTRAEMOS AL INICIO DEL BUCLE Y LUEGO IMPORTAMOS
 
         //INICIO DEL ALGORITMO
         int t=0;
@@ -45,6 +45,10 @@ public class Main {
 
         //CUERPO DEL ALGORITMO
         while(t<t_max){
+            //EXTRAEMOS EL %x CON MAYOR APTITUD
+            int extraccion = (int) Math.floor(pextraccion*n);
+            int[] cadenaExtraida = extraerMayorAptitud(w,extraccion,n);
+
             //SELECCION
             int[] p = new int[n];
             p[0] = apt[0] / apt_gen[t];
@@ -80,32 +84,39 @@ public class Main {
             //FIN SELECCION
 
             //CROSSOVER
-            for(int i=0; i<n; i++){
-               System.out.print(w[i]+" ");
-            }
-            System.out.println();
-
             int[][] parejas = getCrossoverParejas(n,pc);
                 //intercambiamos elmaterial genetico de las parejas
             for(int i=0; i<(parejas[0].length); i++){
-                System.out.println(parejas[0][i] + " " + parejas[1][i]);
                 int posA = parejas[0][i]; int posB = parejas[1][i];
                 int genes = (int) Math.floor(Math.random()*(r-1)) + 1; //nº aleatorio entre 1 y r-1
-                System.out.println(genes);
                 int[] nuevosValores = recombinar(w[posA],w[posB],genes,r);
                 w[posA] = nuevosValores[0];
                 w[posB] = nuevosValores[1];
             }
-
-            for(int i=0; i<n; i++){
-                System.out.print(w[i]+" ");
-            }
-            System.out.println();
             //FIN CROSSOVER
 
             //MUTACION
-            t++;
+            for(int i=0; i<n; i++){
+                String cadena = String.valueOf(w[i]);
+                while(cadena.length()!=r) cadena = '0'+cadena;
+                for(int j=0; j<r; j++){
+                    double randomnum = Math.random();
+                    if(randomnum<pm){
+                        int randomdigit = (int) Math.floor(Math.random()*s);
+                        while(randomdigit==Character.getNumericValue(cadena.charAt(j))){
+                            randomdigit = (int) Math.floor(Math.random()*s);
+                        }
+                        cadena = cadena.substring(0,j)+randomdigit+cadena.substring(j+1);
+                    }
+                }
+                w[i] = Integer.valueOf(cadena);
+            }
+            //FIN MUTACION
 
+            //EXTRAEMOS UN %x ALEATORIO Y AÑADIMOS EL %x CON MAYOR APTITUD EXTRAIDO ANTES
+            w = extraerImportar(w,cadenaExtraida,n);
+
+            t++;
             for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
             apt_gen[t]=0;
             for(int i=0; i<n; i++){apt_gen[t]+=apt[i];}
@@ -117,9 +128,32 @@ public class Main {
         int mejor_a = apt[mejorPos];
         int mejor_w = w[mejorPos];
         System.out.println("Mejor aptitud: "+mejor_a + " - Mejor cadena: " + mejor_w);
+    }
 
+    private static int[] extraerMayorAptitud(int w[], int num, int n){
+        int[] apt = new int[n];
+        for(int i=0; i<n; i++){apt[i] = funcionAptitud(w,i);}
+        int[] mejores = order(apt);
 
+        int[] out = new int[num];
+        for(int i=0; i<num; i++){
+            out[i] = w[mejores[i]];
+        }
 
+        return out;
+    }
+
+    private static int[] extraerImportar(int w[], int cadena[], int n){
+        int num = cadena.length;
+        int[] posAleatorias = new int[num];
+
+        for(int i=0; i<num; i++){
+            int posAleatoria = (int) Math.floor(Math.random()*n);
+            while(checkExists(posAleatorias, posAleatoria)) posAleatoria = (int) Math.floor(Math.random()*n);
+            w[posAleatoria] = cadena[i];
+        }
+
+        return w;
     }
 
     private static int[] recombinar(int a, int b, int genes, int r){
@@ -143,7 +177,7 @@ public class Main {
             if(randomnum<=pc){recombinacionesPos.add(i);}
         }
 
-        //Si los individuos a recombinar no son pares añadimos uno aleatorio del otro conjunto
+        //Si los individuos a recombinar no son pares eliminamos uno aleatorio del conjunto
         if(recombinacionesPos.size()%2!=0){
             int randompos = (int) Math.floor(Math.random()*recombinacionesPos.size());
             recombinacionesPos.remove(randompos);
@@ -173,6 +207,14 @@ public class Main {
         return parejas;
     }
 
+    private static boolean checkExists(int[] list, int nuevo){
+        for(int i=0; i< list.length; i++){
+            if(list[i]==nuevo) return true;
+        }
+
+        return false;
+    }
+
     private static int funcionAptitud(int[] w, int x){
         //FUNCION DE APTITUD: LONGUITUD DE 2'S EN LA CADENA
         int out=0; String wS = String.valueOf(w[x]);
@@ -180,6 +222,18 @@ public class Main {
             if(wS.charAt(i)=='2') out++;
         }
         return out;
+    }
+
+    private static int[] order(int[] x){
+        int[] maxList = new int[x.length];
+
+        for(int i=0; i<x.length; i++){
+            int maxPos = max(x);
+            maxList[i] = maxPos;
+            x[maxPos] = -1;
+        }
+
+        return maxList;
     }
 
     private static int max(int[] x){
